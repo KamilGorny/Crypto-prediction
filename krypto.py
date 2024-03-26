@@ -193,6 +193,7 @@ class Krypto:
         df = self.df[(self.df['data'] >= date_from) & (self.df['data'] <= date_to)]
         percentage = 100 - df['cena'].min() / df['cena'].max() * 100
         if abs(percentage) >= 0:
+            self.articles = pd.DataFrame(columns=['publishedAt', 'title', 'content'])
             parameters = {'q': crypto_dict[self.crypto_name],
                           'apikey': API_KEY_NEWS,
                           'from': date_from,
@@ -216,3 +217,6 @@ class Krypto:
             #print(self.articles.to_dict(orient='records'))
             # self.articles.append(articles, ignore_index=True)
             self.articles = self.articles[self.articles['publishedAt'] >= self.df['data'].min()]
+            print(self.articles)
+            self.articles = self.articles.sort_values(by='publishedAt', ascending=False)
+
