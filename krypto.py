@@ -214,9 +214,7 @@ class Krypto:
                        '['+article['title']+']'+'('+article['url']+')',
                        article['description']]
                 self.articles.loc[len(self.articles)] = row
-            #print(self.articles.to_dict(orient='records'))
             # self.articles.append(articles, ignore_index=True)
             self.articles = self.articles[self.articles['publishedAt'] >= self.df['data'].min()]
-            print(self.articles)
             self.articles = self.articles.sort_values(by='publishedAt', ascending=False)
 
