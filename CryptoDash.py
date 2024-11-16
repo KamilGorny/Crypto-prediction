@@ -14,21 +14,12 @@ import plotly
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
-from krypto import Krypto
-
-ETH = Krypto('ETH', 100, 0, 'PLN')
-# XRP=Krypto('XRP', 1000, 0, 'PLN')
-# ADA=Krypto('ADA', 1000,0)
-# BAT=Krypto('BAT', 1000,0)
-# LUNA=Krypto('LUNA', 1000,0)
-# DOT=Krypto('DOT', 1000,0)
-T = [ETH]
-# T=[ETH, XRP, ADA, BAT, LUNA, DOT]
+from settings import *
 
 no = 0
 N = []
 children = []
-for i in T:
+for i in CRYPTOCURRENCY:
     i.getCandlle()
     N.append(i.crypto_name)
     # i.getCandlle()
@@ -48,7 +39,7 @@ app.layout = html.Div(
                              style_data={
                                  'whiteSpace': 'normal',
                                  'height': 'auto',
-                                }),
+                             }),
         dcc.Interval(
             id='interval-component',
             interval=5 * 60 * 1000,  # in milliseconds
@@ -63,7 +54,7 @@ app.layout = html.Div(
 def update_metrics(n):
     crypto_label = []
     style = {'padding': '5px', 'fontSize': '16px'}
-    for i in T:
+    for i in CRYPTOCURRENCY:
         i.getCandlle()
         i.getBid()
         i.prediction()
@@ -89,7 +80,6 @@ def update_metrics(n):
 
     return crypto_label
 
-
 @app.callback(Output('live-update-graph', 'figure'),
               Output('news-table', 'data'),
               Output('news-table', 'columns'),
@@ -99,7 +89,7 @@ def update_graph_live(n, name):
     ind = N.index(name)
     # fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.01, horizontal_spacing=0.02)
     fig = go.Figure()
-    crypto = T[ind]
+    crypto = CRYPTOCURRENCY[ind]
     x_data = crypto.df['data']
     fig.add_trace(go.Scatter(x=x_data,
                              y=crypto.df['cena'],
@@ -123,13 +113,18 @@ def update_graph_live(n, name):
                              name='WMA75',
                              mode='lines',
                              type='scatter'))
-    fig.add_trace(go.Scatter(x=list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_2h):]),
+    x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_2h):])
+    # x = [t + pd.Timedelta(hours=2) for t in x]
+    #print(list(crypto.y_pred_2h[:, 0]))
+    fig.add_trace(go.Scatter(x=x,
                              y=list(crypto.y_pred_2h[:, 0]),
                              text='2h',
                              name='2h',
                              mode='lines',
                              type='scatter'))
-    fig.add_trace(go.Scatter(x=list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_5h):]),
+    x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_5h):])
+    #x = [t + pd.Timedelta(hours=5) for t in x]
+    fig.add_trace(go.Scatter(x=x,
                              y=list(crypto.y_pred_5h[:, 0]),
                              text='5h',
                              name='5h',
@@ -147,7 +142,7 @@ def update_graph_live(n, name):
     if len(crypto.articles) > 0:
         table_data = crypto.articles.to_dict(orient='records')
         columns = [{"name": "publishedAt", "id": "publishedAt"},
-                   {"name": "title", "id": "title", 'type': 'text', 'presentation':'markdown'},
+                   {"name": "title", "id": "title", 'type': 'text', 'presentation': 'markdown'},
                    {"name": "content", "id": "content"}]
 
     fig.update_layout(height=500, width=1700)
@@ -177,9 +172,12 @@ def prepare_data_future(train_data, y_data, n=0):
 if __name__ == '__main__':
     # from datetime import datetime, timedelta
     #
-    # ETH = Krypto('ETH', 100, 0, 'PLN')
+    #ETH = Krypto('ETH', 100, 0, 'PLN')
     # #
-    # ETH.getCandlle()
+    #ETH.getCandlle()
+    #ETH.prediction()
+    #print(list(ETH.y_pred_2h[:, 0]))
+    #print(ETH.df)
     # now = datetime.now()
     # d1 = datetime(now.year, now.month, now.day)
     # d2 = d1 - timedelta(days=1)

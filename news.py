@@ -13,15 +13,16 @@ class News:
         request = requests.get(NEWS_ENDPOINT, params=parameters)
         return request.json()['articles']
 
-now = datetime.now()
-
-date_from = now - timedelta(days = 1)
-date_from = date_from.strftime('%Y-%m-%d')
-date_to = now.strftime('%Y-%m-%d')
-
-news = News()
-articles = news.get_news('Ethereum', date_from, date_to)
-
-for article in articles:
-    print(article['publishedAt'])
-    print(datetime.strptime(article['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'))
+# now = datetime.now()
+#
+# date_from = now - timedelta(days = 1)
+# date_from = date_from.strftime('%Y-%m-%d')
+# date_to = now.strftime('%Y-%m-%d')
+#
+# news = News()
+# print(date_from, date_to)
+# articles = news.get_news('Ethereum', date_from, date_to)
+#
+# for article in articles:
+#     print(article['publishedAt'])
+#     print(datetime.strptime(article['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'))

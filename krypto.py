@@ -6,11 +6,14 @@ import requests
 import time
 import pandas as pd
 import numpy as np
+from  cryptocurrency_list import crypto_list
 
 URL = "https://api.zonda.exchange/rest/trading/ticker"
+URL = "https://api.zondacrypto.exchange/rest/trading/ticker"
 HEADERS = {'content-type': 'application/json'}
 URL_CANDLE = "https://api.zonda.exchange/rest/trading/candle/history/"
-URL_ORDERBOOK = "https://api.zonda.exchange/rest/trading/orderbook/"
+URL_CANDLE = "https://api.zondacrypto.exchange/rest/trading/candle/history/"
+URL_ORDERBOOK = "https://api.zondacrypto.exchange/rest/trading/orderbook/"
 
 NEWS_ENDPOINT = "https://newsapi.org/v2/everything"
 API_KEY_NEWS = '58c11d11a81a4ac59476e3da65b5874b'
@@ -90,6 +93,7 @@ class Krypto:
 
         start = now - timedelta(hours=85 * 2)
         start = start.strftime("%d/%m/%Y %H:%M:%S")
+        start = '01/01/2024 00:00:00'
 
         start = datetime.strptime(start, "%d/%m/%Y %H:%M:%S").timestamp() * 1000
         stop = datetime.strptime(stop, "%d/%m/%Y %H:%M:%S").timestamp() * 1000
@@ -144,6 +148,7 @@ class Krypto:
         self.y_pred_5h = self.scaler_y.inverse_transform(self.model_5h.predict(X_))
         y_pred_2h = self.y_pred_2h
         y_pred_5h = self.y_pred_5h
+        print(len(y_pred_5h), len(X_), X_.shape)
         if (y_pred_2h[-1] > y_pred_2h[-2] * 1.005) and (y_pred_5h[-1] > y_pred_5h[-2] * 1.005):
             self.buy()
         if (y_pred_2h[-1] * 1.001 < y_pred_2h[-2]) and (y_pred_5h[-1] * 1.001 < y_pred_5h[-2]) and (
@@ -184,7 +189,7 @@ class Krypto:
                                    'date': datetime.now()}
 
     def get_news(self):
-        crypto_dict = {'ETH': 'Ethereum '}
+        crypto_dict = crypto_list
         date_from = self.df['data'].max() - timedelta(days=1)
         date_to = self.df['data'].max() + timedelta(days=1)
         date_from = date_from.strftime('%Y-%m-%d')
@@ -206,10 +211,6 @@ class Krypto:
                 articles['title'] = article['title']
                 articles['description'] = article['description']
                 articles['url'] = article['url']
-                #row = [datetime.strptime(article['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
-                #       article['title'],
-                #       article['description'],
-                #       article['url']]
                 row = [datetime.strptime(article['publishedAt'], '%Y-%m-%dT%H:%M:%SZ'),
                        '['+article['title']+']'+'('+article['url']+')',
                        article['description']]
