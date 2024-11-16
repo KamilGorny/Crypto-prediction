@@ -8,10 +8,8 @@ import pandas as pd
 import numpy as np
 from  cryptocurrency_list import crypto_list
 
-URL = "https://api.zonda.exchange/rest/trading/ticker"
 URL = "https://api.zondacrypto.exchange/rest/trading/ticker"
 HEADERS = {'content-type': 'application/json'}
-URL_CANDLE = "https://api.zonda.exchange/rest/trading/candle/history/"
 URL_CANDLE = "https://api.zondacrypto.exchange/rest/trading/candle/history/"
 URL_ORDERBOOK = "https://api.zondacrypto.exchange/rest/trading/orderbook/"
 
