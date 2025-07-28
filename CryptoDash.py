@@ -57,7 +57,7 @@ def update_metrics(n):
     for i in CRYPTOCURRENCY:
         i.getCandlle()
         i.getBid()
-        i.prediction()
+        #i.prediction()
         label_text = html.Span(['Nazwa: ' + i.crypto_name], style=style)
         crypto_label.append(label_text)
         # hT=html.Span(['Cena: ' + str(i.candleClose['cena'][-1])], style=style)
@@ -113,23 +113,69 @@ def update_graph_live(n, name):
                              name='WMA75',
                              mode='lines',
                              type='scatter'))
-    x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_2h):])
-    # x = [t + pd.Timedelta(hours=2) for t in x]
-    #print(list(crypto.y_pred_2h[:, 0]))
-    fig.add_trace(go.Scatter(x=x,
-                             y=list(crypto.y_pred_2h[:, 0]),
-                             text='2h',
-                             name='2h',
+
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['EMA_9'],
+                             text="EMA", name='EMA_9',
                              mode='lines',
                              type='scatter'))
-    x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_5h):])
-    #x = [t + pd.Timedelta(hours=5) for t in x]
-    fig.add_trace(go.Scatter(x=x,
-                             y=list(crypto.y_pred_5h[:, 0]),
-                             text='5h',
-                             name='5h',
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['EMA_21'],
+                             text="EMA", name='EMA_21',
                              mode='lines',
                              type='scatter'))
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['RSI'],
+                             text='RSI',
+                             name='RSI',
+                             mode='lines',
+                             type='scatter'))
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['MACD'],
+                             text='MACD',
+                             name='MACD',
+                             mode='lines',
+                             type='scatter'))
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['MACD_signal'],
+                             text='MACD_signal',
+                             name='MACD_signal',
+                             mode='lines',
+                             type='scatter'))
+    fig.add_trace(go.Scatter(x=x_data,
+                             y=crypto.df['Middle_BB'],
+                             text='Middle_BB',
+                             name='Middle_BB',
+                             mode='lines',
+                             type='scatter'))
+    # ticket_data = crypto.df[crypto.df['Signal']=='BUY']
+    # print(ticket_data)
+    # fig.add_annotation(x=ticket_data['data'], y=ticket_data['cena'],
+    #                    text="BUY",
+    #                    showarrow=True,
+    #                    arrowhead=1)
+    # ticket_data = crypto.df[crypto.df['Signal'] == 'SELL']
+    # fig.add_annotation(x=ticket_data['data'], y=ticket_data['cena'],
+    #                    text="SELL",
+    #                    showarrow=True,
+    #                    arrowhead=1)
+    # x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_2h):])
+    # # x = [t + pd.Timedelta(hours=2) for t in x]
+    # #print(list(crypto.y_pred_2h[:, 0]))
+    # fig.add_trace(go.Scatter(x=x,
+    #                          y=list(crypto.y_pred_2h[:, 0]),
+    #                          text='2h',
+    #                          name='2h',
+    #                          mode='lines',
+    #                          type='scatter'))
+    # x = list(crypto.df['data'][len(crypto.df['data']) - len(crypto.y_pred_5h):])
+    # #x = [t + pd.Timedelta(hours=5) for t in x]
+    # fig.add_trace(go.Scatter(x=x,
+    #                          y=list(crypto.y_pred_5h[:, 0]),
+    #                          text='5h',
+    #                          name='5h',
+    #                          mode='lines',
+    #                          type='scatter'))
 
     for action in crypto.actions:
         fig.add_annotation(x=action['data'],

@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 from  cryptocurrency_list import crypto_list
 
+import pandas_ta as ta
+
 URL = "https://api.zondacrypto.exchange/rest/trading/ticker"
 HEADERS = {'content-type': 'application/json'}
 URL_CANDLE = "https://api.zondacrypto.exchange/rest/trading/candle/history/"
@@ -32,9 +34,9 @@ class Krypto:
         self.sell_price = 0
         self.df = pd.DataFrame()
         self.actions = []
-        self.scaler_x, self.scaler_y = pickle.load(open(f'scaler_{crypto_name}.pkl', 'rb'))
-        self.model_2h = load_model(f'model_2h_{crypto_name}.h5', compile=False)
-        self.model_5h = load_model(f'model_5h_{crypto_name}.h5', compile=False)
+        #self.scaler_x, self.scaler_y = pickle.load(open(f'scaler_{crypto_name}.pkl', 'rb'))
+        #self.model_2h = load_model(f'model_2h_{crypto_name}.h5', compile=False)
+        #self.model_5h = load_model(f'model_5h_{crypto_name}.h5', compile=False)
         self.y_pred_2h = []
         self.y_pred_5h = []
         #self.articles = pd.DataFrame(columns=['publishedAt', 'title', 'content', 'url'])
@@ -46,7 +48,7 @@ class Krypto:
             response = requests.get(url, headers=header)
             status = json.loads(response.text)['status']
             if status != 'Ok':
-                print(status)
+                print('Status', status)
                 time.sleep(10)
         return response
 
@@ -91,7 +93,7 @@ class Krypto:
 
         start = now - timedelta(hours=85 * 2)
         start = start.strftime("%d/%m/%Y %H:%M:%S")
-        start = '01/01/2024 00:00:00'
+        #start = '01/01/2024 00:00:00'
 
         start = datetime.strptime(start, "%d/%m/%Y %H:%M:%S").timestamp() * 1000
         stop = datetime.strptime(stop, "%d/%m/%Y %H:%M:%S").timestamp() * 1000
@@ -131,7 +133,72 @@ class Krypto:
         self.df['WMA85'] = self.df['min'].rolling(85).apply(lambda x: x[::-1].cumsum().sum() * 2 / 85 / (85 + 1))
         self.df['WMA75'] = self.df['min'].rolling(75).apply(lambda x: x[::-1].cumsum().sum() * 2 / 75 / (75 + 1))
         self.df['signal_MACD'] = self.df['MACD'] - self.df['signal']
+
+        # Oblicz wskaźniki techniczne
+        self.df['EMA_9'] = ta.ema(self.df['cena'], length=9)
+        self.df['EMA_21'] = ta.ema(self.df['cena'], length=21)
+        self.df['RSI'] = ta.rsi(self.df['cena'], length=14)
+        macd = ta.macd(self.df['cena'], fast=12, slow=26, signal=9)
+        self.df['MACD2'] = macd['MACD_12_26_9']
+        self.df['MACD_signal'] = macd['MACDs_12_26_9']
+        bbands = ta.bbands(self.df['cena'], length=20)
+        self.df['Middle_BB'] = bbands['BBM_20_2.0']
+
         self.df = self.df.dropna()
+        #self.generate_signals()
+
+    def generate_signals(self):
+        signals = []
+        for i in range(1, len(self.df)):
+            prev, row = self.df.iloc[i - 1], self.df.iloc[i]
+            buy = (
+                    prev['EMA_9'] < prev['EMA_21'] and row['EMA_9'] > row['EMA_21'] and
+                    row['RSI'] > 50 and
+                    row['MACD'] > row['MACD_signal'] and
+                    row['cena'] > row['Middle_BB']
+            )
+            sell = (
+                    prev['EMA_9'] > prev['EMA_21'] and row['EMA_9'] < row['EMA_21'] and
+                    row['RSI'] < 50 and
+                    row['MACD'] < row['MACD_signal'] and
+                    row['cena'] < row['Middle_BB']
+            )
+            if buy:
+                signals.append('BUY')
+                if self.cash > 0:
+                    self.quantity = self.cash/row['cena']
+                    self.cash = 0
+                    print(self.cash, self.quantity)
+            elif sell:
+                signals.append('SELL')
+                if self.cash == 0:
+                    self.cash = self.quantity * row['cena']
+                    self.quantity = 0
+                    print(self.cash, self.quantity)
+            else:
+                signals.append('')
+        signals.insert(0, '')
+        self.df['Signal'] = signals
+
+    def buy_sell_signals(self):
+        i = len(self.df)
+        prev, row = self.df.iloc[i - 1], self.df.iloc[i]
+        buy = (
+                prev['EMA_9'] < prev['EMA_21'] and row['EMA_9'] > row['EMA_21'] and
+                row['RSI'] > 50 and
+                row['MACD'] > row['MACD_signal'] and
+                row['cena'] > row['Middle_BB']
+                )
+        sell = (
+                prev['EMA_9'] > prev['EMA_21'] and row['EMA_9'] < row['EMA_21'] and
+                row['RSI'] < 50 and
+                row['MACD'] < row['MACD_signal'] and
+                row['cena'] < row['Middle_BB']
+            )
+        if buy:
+            self.buy()
+        elif sell:
+            self.sell()
 
     def prediction(self):
         scaled_data_array = self.scaler_x.transform(self.df[['op', 'min', 'max', 'vol', 'shortEMA', 'longEMA',
@@ -149,8 +216,7 @@ class Krypto:
         print(len(y_pred_5h), len(X_), X_.shape)
         if (y_pred_2h[-1] > y_pred_2h[-2] * 1.005) and (y_pred_5h[-1] > y_pred_5h[-2] * 1.005):
             self.buy()
-        if (y_pred_2h[-1] * 1.001 < y_pred_2h[-2]) and (y_pred_5h[-1] * 1.001 < y_pred_5h[-2]) and (
-                self.ask[0] > self.buy_price):
+        if (y_pred_2h[-1] * 1.001 < y_pred_2h[-2]) and (y_pred_5h[-1] * 1.001 < y_pred_5h[-2]) and (self.ask[0] > self.buy_price):
             self.sell()
         return None
 
